@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
+import { apiGet } from '../api';
 
 export default function Dashboard({ refreshKey }) {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetch('/api/stats')
-      .then((r) => r.json())
+    apiGet('/stats')
       .then((data) => setStats(data))
       .catch((err) => console.warn('Dashboard stats fetch failed:', err));
   }, [refreshKey]);

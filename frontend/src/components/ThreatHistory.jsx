@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import SeverityBadge from './SeverityBadge';
+import { apiGet } from '../api';
 
 export default function ThreatHistory({ refreshKey }) {
   const [data, setData]   = useState({ rows: [], total: 0, page: 1, limit: 20 });
@@ -9,8 +10,7 @@ export default function ThreatHistory({ refreshKey }) {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/history?page=${page}&limit=${LIMIT}`)
-      .then((r) => r.json())
+    apiGet(`/history?page=${page}&limit=${LIMIT}`)
       .then((d) => setData(d))
       .catch((err) => console.warn('History fetch failed:', err))
       .finally(() => setLoading(false));

@@ -3,6 +3,7 @@ import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
+import { apiGet } from '../api';
 
 const COLORS = {
   SAFE:       '#22c55e',
@@ -23,8 +24,7 @@ export default function StatisticsPanel({ refreshKey }) {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetch('/api/stats')
-      .then((r) => r.json())
+    apiGet('/stats')
       .then((d) => setStats(d))
       .catch((err) => console.warn('Stats fetch failed:', err));
   }, [refreshKey]);

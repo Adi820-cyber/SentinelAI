@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import SeverityBadge from './SeverityBadge';
+import { apiPost } from '../api';
 
 const CONFIDENCE_COLORS = {
   SAFE:       '#22c55e',
@@ -28,13 +29,7 @@ export default function PromptAnalyzer({ onNewScan }) {
     setResult(null);
 
     try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Analysis failed');
+      const data = await apiPost('/analyze', { prompt: prompt.trim() });
       setResult(data);
       onNewScan?.();
     } catch (err) {

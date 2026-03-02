@@ -1,10 +1,48 @@
 const express = require('express');
 const router = express.Router();
-const { Ollama } = require('ollama');
 const { insertScan } = require('../db/database');
 
-const client = new Ollama({ host: process.env.OLLAMA_HOST || 'http://localhost:11434' });
-const MODEL = process.env.OLLAMA_MODEL || 'llama3.2';
+// ── AI Provider: Groq (cloud, free) or Ollama (local) ────────────────────────
+const USE_GROQ = !!process.env.GROQ_API_KEY;
+let aiChat; // async (systemPrompt, userPrompt) => string
+
+if (USE_GROQ) {
+  const Groq = require('groq-sdk');
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  console.log(`[AI] Using Groq cloud (model: ${MODEL})`);
+
+  aiChat = async (systemPrompt, userPrompt) => {
+    const res = await groq.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.1,
+      response_format: { type: 'json_object' },
+    });
+    return res.choices[0].message.content.trim();
+  };
+} else {
+  const { Ollama } = require('ollama');
+  const client = new Ollama({ host: process.env.OLLAMA_HOST || 'http://localhost:11434' });
+  const MODEL = process.env.OLLAMA_MODEL || 'llama3.2';
+  console.log(`[AI] Using Ollama local (model: ${MODEL})`);
+
+  aiChat = async (systemPrompt, userPrompt) => {
+    const res = await client.chat({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      format: 'json',
+      options: { temperature: 0.1 },
+    });
+    return res.message.content.trim();
+  };
+}
 
 const SYSTEM_PROMPT = `You are a cybersecurity AI that classifies user prompts for LLM systems.
 Analyze the following prompt and classify it as one of:
@@ -34,17 +72,7 @@ router.post('/analyze', async (req, res) => {
   }
 
   try {
-    const response = await client.chat({
-      model: MODEL,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: prompt.trim() },
-      ],
-      format: 'json',
-      options: { temperature: 0.1 },
-    });
-
-    const raw = response.message.content.trim();
+    const raw = await aiChat(SYSTEM_PROMPT, prompt.trim());
     let parsed;
 
     try {
