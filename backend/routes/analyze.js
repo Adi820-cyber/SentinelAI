@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { insertScan } = require('../db/database');
 const { preAnalyze } = require('../lib/preAnalyzer');
+const { validatePrompt } = require('../middleware/inputValidator');
+const { requireAuth, requireRole } = require('../middleware/auth');
+const logger = require('../core/logger');
+const alertManager = require('../core/alertManager');
 
 // ── AI Provider: Groq (cloud, free) or Ollama (local) ────────────────────────
 const USE_GROQ = !!process.env.GROQ_API_KEY;
@@ -105,19 +109,11 @@ function escalateClassification(aiClass, preResult) {
   return { finalClass, boostReason };
 }
 
-router.post('/analyze', async (req, res) => {
-  const { prompt } = req.body;
-
-  if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
-    return res.status(400).json({ error: 'A non-empty "prompt" string is required.' });
-  }
-
-  if (prompt.length > 10000) {
-    return res.status(400).json({ error: 'Prompt exceeds maximum length of 10,000 characters.' });
-  }
+router.post('/analyze', requireAuth, requireRole('analyze'), validatePrompt, async (req, res) => {
+  const trimmed = req.sanitizedPrompt;
 
   try {
-    const trimmed = prompt.trim();
+    const startTime = Date.now();
 
     // ── Step 1: Pre-analysis (rule-based) ──
     const preResult = preAnalyze(trimmed);
@@ -171,6 +167,31 @@ router.post('/analyze', async (req, res) => {
       detectedPatterns: preResult.detectedPatterns,
     });
 
+    const totalTime = Date.now() - startTime;
+    logger.info('analyze', `${classification} (score: ${threatScore}) in ${totalTime}ms`, {
+      id,
+      classification,
+      threatScore,
+      riskLevel,
+      patternsFound: preResult.detectedPatterns.length,
+      durationMs: totalTime,
+    });
+
+    // ── Step 6: Trigger alerts for high-severity threats ──
+    if (riskLevel === 'Critical' || riskLevel === 'High') {
+      alertManager.processAlert({
+        classification,
+        threatScore,
+        riskLevel,
+        attackTypes: preResult.attackTypes,
+        detectedPatterns: preResult.detectedPatterns,
+        matchedThreatIds: preResult.matchedThreatIds || [],
+        threatNotification: preResult.threatNotification,
+        prompt: trimmed.length > 200 ? trimmed.slice(0, 200) + '…' : trimmed,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     res.json({
       id,
       classification,
@@ -185,7 +206,7 @@ router.post('/analyze', async (req, res) => {
       threatNotification: preResult.threatNotification || null,
     });
   } catch (err) {
-    console.error('Analyze error:', err.message);
+    logger.error('analyze', 'Analysis failed', { error: err.message, stack: err.stack });
     const safeMessage = process.env.NODE_ENV === 'production'
       ? 'Analysis failed. Please try again.'
       : err.message || 'Analysis failed.';
