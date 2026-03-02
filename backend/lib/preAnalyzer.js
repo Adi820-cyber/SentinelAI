@@ -101,8 +101,11 @@ const TEMPLATE_INJECTION_PATTERNS = [
 
 const PROMPT_LEAK_PATTERNS = [
   { re: /\b(translate|convert|repeat)\b.*\b(instructions?|system\s*prompt|rules?)\b/i,  label: 'translation-based prompt leak', weight: 30 },
-  { re: /\b(summarize|paraphrase|rephrase)\b.*\b(above|instructions?|everything)\b/i,  label: 'summarization prompt leak',     weight: 25 },
-  { re: /\bwhat\s+(are|were)\s+your\s+(instructions?|rules?|guidelines?)\b/i,          label: 'direct prompt extraction',      weight: 30 },
+  { re: /\b(summarize|paraphrase|rephrase|explain|describe)\b/i,  label: 'summarization/explanation meta-task leak', weight: 25 },
+  { re: /(blog|article|post|story|guide).*?(instructions?|system\s*prompt|rules?|how\s+you\s+work)/i, label: 'indirect prompt leak (write about instructions)', weight: 30 },
+  { re: /\b(what|tell me)\b.*\b(instructions?|rules?|guidelines?|prompts?)\b/i,            label: 'direct instruction extraction',      weight: 30 },
+  { re: /\b(how|what)\s+(were|are|was|is)\s+(you|yourself)\b/i,                         label: 'startup instruction query',          weight: 30 },
+  { re: /\bwhat\s+(are|were)\s+your\s+(instructions?|rules?|guidelines?|system\s*prompt)\b/i,          label: 'direct prompt extraction',      weight: 30 },
   { re: /\b(CRLF|%0[dD]|%0[aA]|\\r\\n)/i,                                            label: 'CRLF injection',                weight: 25 },
   { re: /<!\[CDATA\[/i,                                                                 label: 'XML CDATA injection',           weight: 25 },
 ];

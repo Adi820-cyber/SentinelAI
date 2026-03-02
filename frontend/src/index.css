@@ -198,6 +198,9 @@ body {
 .stat-chip.jailbreak  .stat-value { color: var(--jailbreak); }
 .stat-chip.jailbreak:hover { border-color: var(--jailbreak); }
 
+/* Critical Injection color fix: orange -> red for Critical risk */
+.threat-score-ring[style*="rgb(239, 68, 68)"] { --score-color: #ef4444; } /* Critical red */, 
+
 /* ──────────────────────────────────────────
    Prompt Analyzer
    ────────────────────────────────────────── */
