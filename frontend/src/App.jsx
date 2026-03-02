@@ -3,8 +3,9 @@ import Dashboard from './components/Dashboard';
 import PromptAnalyzer from './components/PromptAnalyzer';
 import ThreatHistory from './components/ThreatHistory';
 import StatisticsPanel from './components/StatisticsPanel';
+import ThreatIntelPanel from './components/ThreatIntelPanel';
 
-const TABS = ['Analyzer', 'History', 'Statistics'];
+const TABS = ['Analyzer', 'History', 'Statistics', 'Threat Intel'];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Analyzer');
@@ -33,6 +34,7 @@ export default function App() {
               {tab === 'Analyzer' && '⚡ '}
               {tab === 'History' && '📋 '}
               {tab === 'Statistics' && '📊 '}
+              {tab === 'Threat Intel' && '🛡️ '}
               {tab}
             </button>
           ))}
@@ -47,6 +49,7 @@ export default function App() {
         {activeTab === 'Analyzer' && <PromptAnalyzer onNewScan={onNewScan} />}
         {activeTab === 'History'  && <ThreatHistory  refreshKey={refreshKey} />}
         {activeTab === 'Statistics' && <StatisticsPanel refreshKey={refreshKey} />}
+        {activeTab === 'Threat Intel' && <ThreatIntelPanel />}
       </main>
 
       {/* Footer */}

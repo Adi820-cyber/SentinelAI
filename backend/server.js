@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const analyzeRoute = require('./routes/analyze');
 const historyRoute = require('./routes/history');
 const statsRoute = require('./routes/stats');
+const threatIntelRoute = require('./routes/threatIntel');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -61,6 +62,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api', analyzeRoute);
 app.use('/api', historyRoute);
 app.use('/api', statsRoute);
+app.use('/api', threatIntelRoute);
 
 // 404 fallback
 app.use((req, res) => {

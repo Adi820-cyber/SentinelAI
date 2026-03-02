@@ -181,6 +181,88 @@ export default function PromptAnalyzer({ onNewScan }) {
               </div>
             )}
 
+            {/* ── Threat Intelligence Notification ── */}
+            {result.threatNotification && (
+              <div className={`threat-notification threat-${result.threatNotification.alertLevel.toLowerCase()}`}>
+                <div className="threat-notif-header">
+                  <span className={`alert-badge alert-${result.threatNotification.alertLevel.toLowerCase()}`}>
+                    {result.threatNotification.alertLevel === 'CRITICAL' && '🚨'}
+                    {result.threatNotification.alertLevel === 'WARNING' && '⚠️'}
+                    {result.threatNotification.alertLevel === 'NOTICE' && 'ℹ️'}
+                    {result.threatNotification.alertLevel === 'INFO' && '✅'}
+                    {' '}{result.threatNotification.alertLevel}
+                  </span>
+                  <span className="threat-match-count">
+                    {result.threatNotification.matchCount} threat{result.threatNotification.matchCount !== 1 ? 's' : ''} matched
+                  </span>
+                </div>
+
+                <p className="threat-recommendation">{result.threatNotification.recommendation}</p>
+
+                {result.threatNotification.categories && result.threatNotification.categories.length > 0 && (
+                  <div className="threat-categories">
+                    {result.threatNotification.categories.map((cat) => (
+                      <span key={cat} className="threat-cat-tag">{cat}</span>
+                    ))}
+                  </div>
+                )}
+
+                {result.threatNotification.criticalThreats && result.threatNotification.criticalThreats.length > 0 && (
+                  <div className="threat-details-section">
+                    <p className="mini-label" style={{ color: '#ef4444' }}>Critical Threats</p>
+                    {result.threatNotification.criticalThreats.map((t) => (
+                      <div key={t.id} className="threat-detail-item critical">
+                        <span className="threat-id">{t.id}</span>
+                        <span className="threat-label">{t.label}</span>
+                        <p className="threat-desc">{t.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {result.threatNotification.highThreats && result.threatNotification.highThreats.length > 0 && (
+                  <div className="threat-details-section">
+                    <p className="mini-label" style={{ color: '#f97316' }}>High Threats</p>
+                    {result.threatNotification.highThreats.map((t) => (
+                      <div key={t.id} className="threat-detail-item high">
+                        <span className="threat-id">{t.id}</span>
+                        <span className="threat-label">{t.label}</span>
+                        <p className="threat-desc">{t.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {result.threatNotification.mitigations && result.threatNotification.mitigations.length > 0 && (
+                  <details className="threat-mitigations">
+                    <summary className="mini-label" style={{ cursor: 'pointer' }}>
+                      🛡️ Mitigations ({result.threatNotification.mitigations.length})
+                    </summary>
+                    <ul className="mitigation-list">
+                      {result.threatNotification.mitigations.map((m) => (
+                        <li key={m.category}>
+                          <strong>{m.category}:</strong> {m.mitigation}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+
+                {result.matchedThreatIds && result.matchedThreatIds.length > 0 && (
+                  <details className="threat-ids-section">
+                    <summary className="mini-label" style={{ cursor: 'pointer' }}>
+                      🏷️ Matched IDs ({result.matchedThreatIds.length})
+                    </summary>
+                    <div className="threat-id-tags">
+                      {result.matchedThreatIds.map((id) => (
+                        <span key={id} className="threat-id-tag">{id}</span>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
+
             <div className="confidence-section">
               <div className="confidence-label">
                 <span>Confidence</span>

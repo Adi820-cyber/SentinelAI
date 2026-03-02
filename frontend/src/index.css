@@ -198,8 +198,7 @@ body {
 .stat-chip.jailbreak  .stat-value { color: var(--jailbreak); }
 .stat-chip.jailbreak:hover { border-color: var(--jailbreak); }
 
-/* Critical Injection color fix: orange -> red for Critical risk */
-.threat-score-ring[style*="rgb(239, 68, 68)"] { --score-color: #ef4444; } /* Critical red */, 
+/* ───────────────────────────────────────────────────────────────────────────────
 
 /* ──────────────────────────────────────────
    Prompt Analyzer
@@ -683,4 +682,328 @@ body {
 ::selection {
   background: rgba(79,142,247,0.3);
   color: #fff;
+}
+
+/* ──────────────────────────────────────────
+   Threat Notification (in Analyzer results)
+   ────────────────────────────────────────── */
+.threat-notification {
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: rgba(0,0,0,0.2);
+}
+.threat-notification.threat-critical {
+  border-color: rgba(239,68,68,0.4);
+  background: rgba(239,68,68,0.06);
+}
+.threat-notification.threat-warning {
+  border-color: rgba(249,115,22,0.4);
+  background: rgba(249,115,22,0.06);
+}
+.threat-notification.threat-notice {
+  border-color: rgba(234,179,8,0.4);
+  background: rgba(234,179,8,0.06);
+}
+.threat-notification.threat-info {
+  border-color: rgba(34,197,94,0.4);
+  background: rgba(34,197,94,0.06);
+}
+
+.threat-notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.alert-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.alert-badge.alert-critical { color: #ef4444; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); }
+.alert-badge.alert-warning  { color: #f97316; background: rgba(249,115,22,0.15); border: 1px solid rgba(249,115,22,0.3); }
+.alert-badge.alert-notice   { color: #eab308; background: rgba(234,179,8,0.15);  border: 1px solid rgba(234,179,8,0.3); }
+.alert-badge.alert-info     { color: #22c55e; background: rgba(34,197,94,0.15);  border: 1px solid rgba(34,197,94,0.3); }
+
+.threat-match-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.threat-recommendation {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.2);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent-blue);
+}
+
+.threat-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.threat-cat-tag {
+  padding: 2px 10px;
+  border-radius: 50px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.2);
+  letter-spacing: 0.03em;
+}
+
+.threat-details-section { margin: 10px 0; }
+
+.threat-detail-item {
+  padding: 8px 12px;
+  margin: 5px 0;
+  border-radius: var(--radius-sm);
+  background: rgba(0,0,0,0.15);
+  border-left: 3px solid var(--text-muted);
+}
+.threat-detail-item.critical { border-left-color: #ef4444; }
+.threat-detail-item.high     { border-left-color: #f97316; }
+
+.threat-id {
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(79,142,247,0.15);
+  color: var(--accent-blue);
+  margin-right: 8px;
+}
+.threat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.threat-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.threat-mitigations,
+.threat-ids-section {
+  margin-top: 10px;
+}
+.threat-mitigations summary,
+.threat-ids-section summary {
+  user-select: none;
+  padding: 4px 0;
+}
+.mitigation-list {
+  list-style: none;
+  padding: 8px 0 0 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mitigation-list li {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.15);
+  border-radius: var(--radius-sm);
+}
+.mitigation-list li strong {
+  color: var(--accent-cyan);
+}
+
+.threat-id-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.threat-id-tag {
+  font-family: 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(155,114,255,0.12);
+  color: var(--accent-purple);
+  border: 1px solid rgba(155,114,255,0.25);
+}
+
+/* ──────────────────────────────────────────
+   Threat Intel Panel
+   ────────────────────────────────────────── */
+.threat-intel-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ti-severity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .ti-severity-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.ti-severity-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  transition: transform var(--transition);
+}
+.ti-severity-chip:hover { transform: translateY(-2px); }
+.ti-sev-icon { font-size: 22px; margin-bottom: 4px; }
+.ti-sev-count { font-size: 28px; font-weight: 800; line-height: 1.2; }
+.ti-sev-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+.ti-category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.ti-category-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.ti-category-btn:hover {
+  border-color: var(--accent-blue);
+  color: var(--text-primary);
+}
+.ti-category-btn.active {
+  background: rgba(79,142,247,0.12);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+.ti-cat-name { font-weight: 600; }
+.ti-cat-count {
+  background: rgba(255,255,255,0.08);
+  padding: 2px 8px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.ti-category-btn.active .ti-cat-count {
+  background: rgba(79,142,247,0.2);
+  color: var(--accent-blue);
+}
+
+.ti-category-detail { margin-top: 10px; }
+.ti-pattern-table-wrap { overflow-x: auto; }
+.ti-pattern-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.ti-pattern-table th {
+  text-align: left;
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 10px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.ti-pattern-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-primary);
+  vertical-align: top;
+}
+.ti-pattern-table tr:hover td { background: rgba(255,255,255,0.03); }
+.ti-id {
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(79,142,247,0.15);
+  color: var(--accent-blue);
+}
+.ti-sev-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 50px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+}
+.ti-desc-cell {
+  font-size: 11px;
+  color: var(--text-muted);
+  max-width: 340px;
+}
+
+.ti-api-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ti-api-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+}
+.ti-api-method {
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(34,197,94,0.15);
+  color: #22c55e;
+}
+.ti-api-path {
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--accent-cyan);
+}
+.ti-api-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
 }

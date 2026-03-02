@@ -181,6 +181,8 @@ router.post('/analyze', async (req, res) => {
       riskLevel,
       attackTypes: preResult.attackTypes,
       detectedPatterns: preResult.detectedPatterns,
+      matchedThreatIds: preResult.matchedThreatIds || [],
+      threatNotification: preResult.threatNotification || null,
     });
   } catch (err) {
     console.error('Analyze error:', err.message);
