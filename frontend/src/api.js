@@ -1,8 +1,10 @@
 // Resolves API base URL:
 // - In development (Vite proxy): "/api" → proxied to localhost:5000
-// - In production: uses VITE_API_URL env variable (e.g., "https://sentinelai-api.onrender.com/api")
-const API_BASE = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
+// - In production: set VITE_API_URL to your Render backend URL
+//   e.g. VITE_API_URL=https://sentinelai-ufb0.onrender.com
+const rawUrl = import.meta.env.VITE_API_URL || '';
+const API_BASE = rawUrl
+  ? `${rawUrl.replace(/\/+$/, '')}/api`
   : '/api';
 
 export async function apiGet(path) {
