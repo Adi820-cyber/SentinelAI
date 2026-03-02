@@ -27,6 +27,14 @@ export default function ThreatHistory({ refreshKey }) {
     });
   };
 
+  const RISK_COLORS = {
+    None:     '#22c55e',
+    Low:      '#4f8ef7',
+    Medium:   '#eab308',
+    High:     '#f97316',
+    Critical: '#ef4444',
+  };
+
   return (
     <div className="card">
       <h2 className="history-title">📋 Threat History
@@ -52,6 +60,8 @@ export default function ThreatHistory({ refreshKey }) {
                 <th>Time</th>
                 <th>Prompt Preview</th>
                 <th>Classification</th>
+                <th>Score</th>
+                <th>Risk</th>
                 <th>Confidence</th>
               </tr>
             </thead>
@@ -66,6 +76,29 @@ export default function ThreatHistory({ refreshKey }) {
                     {row.prompt_snippet}
                   </td>
                   <td><SeverityBadge classification={row.classification} /></td>
+                  <td>
+                    <span style={{
+                      fontWeight: 700,
+                      fontVariantNumeric: 'tabular-nums',
+                      color: RISK_COLORS[row.riskLevel] || 'var(--text-secondary)',
+                    }}>
+                      {row.threatScore ?? '—'}
+                    </span>
+                  </td>
+                  <td>
+                    {row.riskLevel && (
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: '2px 8px',
+                        borderRadius: 50,
+                        background: (RISK_COLORS[row.riskLevel] || '#4f8ef7') + '18',
+                        color: RISK_COLORS[row.riskLevel] || '#4f8ef7',
+                      }}>
+                        {row.riskLevel}
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
                       {Math.round(row.confidence * 100)}%

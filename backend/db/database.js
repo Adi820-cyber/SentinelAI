@@ -13,14 +13,23 @@ let state = { scans: [], nextId: 1 };
 // Load existing data on startup
 if (fs.existsSync(DB_PATH)) {
   try {
-    state = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+    const loaded = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+    // Validate structure to prevent prototype pollution
+    if (Array.isArray(loaded.scans) && typeof loaded.nextId === 'number') {
+      state = { scans: loaded.scans, nextId: loaded.nextId };
+    } else {
+      console.warn('[db] DB file has invalid structure — starting fresh.');
+    }
   } catch {
     console.warn('[db] Could not read DB file — starting fresh.');
   }
 }
 
 function persist() {
-  fs.writeFileSync(DB_PATH, JSON.stringify(state, null, 2), 'utf8');
+  // Atomic write: write to temp file then rename to prevent corruption on crash
+  const tmp = DB_PATH + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf8');
+  fs.renameSync(tmp, DB_PATH);
 }
 
 // ── CRUD ─────────────────────────────────────────────────────────────────────
@@ -28,18 +37,22 @@ function persist() {
 /**
  * Insert a new scan record.
  */
-function insertScan({ full_prompt, classification, confidence, explanation }) {
+function insertScan({ full_prompt, classification, confidence, explanation, threatScore, riskLevel, attackTypes, detectedPatterns }) {
   const prompt_snippet =
     full_prompt.length > 120 ? full_prompt.slice(0, 120) + '…' : full_prompt;
 
   const scan = {
-    id:             state.nextId++,
+    id:               state.nextId++,
     prompt_snippet,
     full_prompt,
     classification,
-    confidence:     parseFloat(confidence) || 0,
-    explanation:    explanation || '',
-    timestamp:      new Date().toISOString(),
+    confidence:       parseFloat(confidence) || 0,
+    explanation:      explanation || '',
+    threatScore:      threatScore || 0,
+    riskLevel:        riskLevel || 'None',
+    attackTypes:      attackTypes || [],
+    detectedPatterns: detectedPatterns || [],
+    timestamp:        new Date().toISOString(),
   };
 
   state.scans.push(scan);

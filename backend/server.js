@@ -18,22 +18,39 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
   next();
 });
 
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+// CORS — restrict origins in production
+const corsOptions = process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL
+  ? { origin: process.env.FRONTEND_URL.split(',').map(s => s.trim()), credentials: true }
+  : {};
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '100kb' }));
 
-// Rate limiter: max 30 requests per minute per IP
-const limiter = rateLimit({
+// Rate limiters
+const analyzeLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please slow down.' },
+  message: { error: 'Too many analysis requests, please slow down.' },
 });
-app.use('/api/analyze', limiter);
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests.' },
+});
+app.use('/api/analyze', analyzeLimiter);
+app.use('/api/history', generalLimiter);
+app.use('/api/stats', generalLimiter);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -48,6 +48,14 @@ export default function App() {
         {activeTab === 'History'  && <ThreatHistory  refreshKey={refreshKey} />}
         {activeTab === 'Statistics' && <StatisticsPanel refreshKey={refreshKey} />}
       </main>
+
+      {/* Footer */}
+      <footer className="app-footer">
+        <span>© {new Date().getFullYear()} SentinelAI — AI-Powered Prompt Firewall</span>
+        <span className="footer-badge">
+          <span>🔒</span> v1.0.0 &middot; Ollama + Groq
+        </span>
+      </footer>
     </div>
   );
 }

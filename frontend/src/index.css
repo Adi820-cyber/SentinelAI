@@ -131,47 +131,72 @@ body {
   padding: 24px;
   backdrop-filter: blur(12px);
   box-shadow: var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
 }
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(79,142,247,0.3), transparent);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.card:hover::before { opacity: 1; }
 
 /* ──────────────────────────────────────────
    Dashboard Stats Bar
    ────────────────────────────────────────── */
 .dashboard-bar {
   display: flex;
-  gap: 16px;
-  padding: 16px 32px;
+  gap: 12px;
+  padding: 14px 32px;
   border-bottom: 1px solid var(--glass-border);
   background: rgba(10, 22, 40, 0.6);
   backdrop-filter: blur(10px);
   flex-wrap: wrap;
+  align-items: stretch;
 }
 
 .stat-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 20px;
+  justify-content: center;
+  padding: 10px 22px;
   border-radius: var(--radius-md);
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);
-  min-width: 90px;
+  min-width: 100px;
+  transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+}
+.stat-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 .stat-chip .stat-value {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   line-height: 1.2;
 }
 .stat-chip .stat-label {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
+  margin-top: 2px;
 }
 .stat-chip.total  .stat-value { color: var(--accent-cyan); }
+.stat-chip.total:hover { border-color: var(--accent-cyan); }
 .stat-chip.safe   .stat-value { color: var(--safe); }
+.stat-chip.safe:hover { border-color: var(--safe); }
 .stat-chip.suspicious .stat-value { color: var(--suspicious); }
+.stat-chip.suspicious:hover { border-color: var(--suspicious); }
 .stat-chip.injection  .stat-value { color: var(--injection); }
+.stat-chip.injection:hover { border-color: var(--injection); }
 .stat-chip.jailbreak  .stat-value { color: var(--jailbreak); }
+.stat-chip.jailbreak:hover { border-color: var(--jailbreak); }
 
 /* ──────────────────────────────────────────
    Prompt Analyzer
@@ -286,6 +311,115 @@ body {
 }
 
 /* ──────────────────────────────────────────
+   Threat Score Gauge
+   ────────────────────────────────────────── */
+.threat-score-section {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 16px;
+  background: rgba(0,0,0,0.25);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+}
+.threat-score-ring {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+.score-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.score-track {
+  fill: none;
+  stroke: rgba(255,255,255,0.08);
+  stroke-width: 8;
+}
+.score-fill {
+  fill: none;
+  stroke: var(--score-color, #4f8ef7);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 326.7;
+  transition: stroke-dashoffset 1s ease;
+}
+.score-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.score-number { font-size: 28px; font-weight: 800; line-height: 1; }
+.score-max { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.threat-score-info { display: flex; flex-direction: column; gap: 8px; }
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+/* ──────────────────────────────────────────
+   Attack Types & Patterns
+   ────────────────────────────────────────── */
+.attack-types-section, .patterns-section {
+  margin: 14px 0;
+}
+.mini-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+.attack-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.attack-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(249, 115, 22, 0.12);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  letter-spacing: 0.03em;
+}
+.pattern-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.pattern-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+.pattern-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ──────────────────────────────────────────
    Severity Badge
    ────────────────────────────────────────── */
 .severity-badge {
@@ -388,6 +522,68 @@ body {
   margin-bottom: 18px;
 }
 
+/* Breakdown cards grid */
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .breakdown-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 500px) {
+  .breakdown-grid { grid-template-columns: 1fr; }
+}
+.breakdown-card {
+  background: rgba(0,0,0,0.25);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  border: 1px solid var(--glass-border);
+  border-top: 3px solid var(--cls-color);
+  transition: transform var(--transition), border-color var(--transition);
+}
+.breakdown-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--cls-color);
+}
+.breakdown-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.breakdown-count {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--cls-color);
+  line-height: 1;
+}
+.breakdown-pct {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.breakdown-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+.breakdown-bar-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.breakdown-bar-fill {
+  height: 100%;
+  background: var(--cls-color);
+  border-radius: 99px;
+  transition: width 0.8s ease;
+}
+
 /* ──────────────────────────────────────────
    Loading Spinner
    ────────────────────────────────────────── */
@@ -421,4 +617,67 @@ body {
   padding: 10px 16px;
   font-size: 13px;
   margin-top: 12px;
+}
+
+/* ──────────────────────────────────────────
+   Footer
+   ────────────────────────────────────────── */
+.app-footer {
+  padding: 16px 32px;
+  border-top: 1px solid var(--glass-border);
+  background: rgba(5, 12, 23, 0.6);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.app-footer a {
+  color: var(--accent-blue);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.app-footer a:hover { color: var(--accent-cyan); }
+.footer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 50px;
+  background: rgba(79,142,247,0.1);
+  border: 1px solid rgba(79,142,247,0.2);
+  font-size: 11px;
+  color: var(--accent-blue);
+}
+
+/* ──────────────────────────────────────────
+   Card Hover Effects
+   ────────────────────────────────────────── */
+.card {
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+.card:hover {
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(79,142,247,0.08);
+}
+
+/* ──────────────────────────────────────────
+   Scrollbar
+   ────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+/* ──────────────────────────────────────────
+   Selection
+   ────────────────────────────────────────── */
+::selection {
+  background: rgba(79,142,247,0.3);
+  color: #fff;
 }
