@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './components/Dashboard';
 import PromptAnalyzer from './components/PromptAnalyzer';
@@ -6,13 +6,20 @@ import ThreatHistory from './components/ThreatHistory';
 import StatisticsPanel from './components/StatisticsPanel';
 import ThreatIntelPanel from './components/ThreatIntelPanel';
 import BenchmarkPanel from './components/BenchmarkPanel';
+import logoSvg from './assets/logo.svg';
 
 const TABS = ['Analyzer', 'History', 'Statistics', 'Threat Intel', 'Benchmark'];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Analyzer');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [theme, setTheme] = useState('dark');
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
   const onNewScan = () => setRefreshKey((k) => k + 1);
 
   return (
@@ -21,10 +28,12 @@ export default function App() {
       {/* Header */}
       <header className="app-header">
         <div className="header-brand">
-          <span className="brand-icon">🛡️</span>
+          <div className="brand-logo-wrap">
+            <img src={logoSvg} alt="SentinelAI logo" />
+          </div>
           <div>
             <h1>SentinelAI</h1>
-            <p className="brand-tagline">The AI Firewall for AI Systems</p>
+            <p className="brand-tagline">AI Prompt Defense System</p>
           </div>
         </div>
         <nav className="nav-tabs">
@@ -34,15 +43,21 @@ export default function App() {
               className={`nav-tab ${activeTab === tab ? 'active' : ''}`}
               onClick={() => setActiveTab(tab)}
             >
-              {tab === 'Analyzer' && '⚡ '}
-              {tab === 'History' && '📋 '}
-              {tab === 'Statistics' && '📊 '}
-              {tab === 'Threat Intel' && '🛡️ '}
-              {tab === 'Benchmark' && '🎯 '}
               {tab}
             </button>
           ))}
         </nav>
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? '☀' : '☽'}
+        </button>
+        <div className="header-status">
+          <span className="status-dot" />
+          Online
+        </div>
       </header>
 
       {/* Stats bar */}
