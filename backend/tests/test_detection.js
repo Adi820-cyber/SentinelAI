@@ -260,7 +260,7 @@ section('11. Pipeline Helpers');
 (() => {
   const preResult = { threatScore: 30, attackTypes: ['Prompt Injection'], detectedPatterns: ['Ignore instructions'] };
   const { finalClass } = escalateClassification('SAFE', preResult);
-  assert(finalClass === 'SUSPICIOUS', 'SAFE escalated to SUSPICIOUS for moderate threats');
+  assert(finalClass === 'INJECTION', 'SAFE escalated to INJECTION for moderate threats (score>=25)');
 })();
 
 (() => {

@@ -3,14 +3,18 @@
  *
  * Orchestrates the full analysis pipeline:
  *   1. Input sanitization & validation
- *   2. Pre-analysis (rule engine: 188 regex patterns)
+ *   2. Pre-analysis (rule engine: 188+ regex patterns)
  *   3. AI classification (Ollama or Groq)
- *   4. Classification escalation (rule override when AI misses threats)
- *   5. Threat scoring (blended: 60% rule + 40% AI)
+ *   4. Classification reconciliation (rule authority + AI de-escalation)
+ *   5. Threat scoring (blended: 70% rule + 20% AI + 10% anomaly proxy)
  *   6. Alert generation
  *
- * Separates concerns: this module owns the detection logic,
- * while routes only handle HTTP request/response.
+ * The rule engine is the primary authority:
+ *   - Score ≥ 40   → Force INJECTION/JAILBREAK regardless of AI
+ *   - Score 25–39   → At least INJECTION (override weaker AI)
+ *   - Score 15–24   → At least SUSPICIOUS
+ *   - Score 1–14    → Trust AI but log rule hit
+ *   - Score 0 + AI flags threat → De-escalate to SAFE (trust rules)
  */
 const { preAnalyze } = require('../lib/preAnalyzer');
 const logger = require('./logger');
@@ -19,30 +23,53 @@ const alertManager = require('./alertManager');
 const CLASS_RANK = { SAFE: 0, SUSPICIOUS: 1, INJECTION: 2, JAILBREAK: 3 };
 
 /**
- * Escalate classification when rule engine detects threats AI missed.
+ * Reconcile AI classification with rule engine results.
+ * Rule engine is the primary authority; AI provides secondary signal.
  */
 function escalateClassification(aiClass, preResult) {
   let finalClass = aiClass;
   let boostReason = null;
+  const score = preResult.threatScore;
+  const hasJailbreak = (preResult.attackTypes || []).includes('Jailbreak');
+  const topPatterns = preResult.detectedPatterns.slice(0, 3).join(', ');
 
-  if (preResult.threatScore >= 50 && CLASS_RANK[aiClass] < CLASS_RANK['INJECTION']) {
-    finalClass = preResult.attackTypes.includes('Jailbreak') ? 'JAILBREAK' : 'INJECTION';
-    boostReason = `Rule engine detected: ${preResult.detectedPatterns.slice(0, 3).join(', ')}`;
-  } else if (preResult.threatScore >= 25 && CLASS_RANK[aiClass] < CLASS_RANK['SUSPICIOUS']) {
-    finalClass = 'SUSPICIOUS';
-    boostReason = `Rule engine detected: ${preResult.detectedPatterns.slice(0, 3).join(', ')}`;
+  if (score >= 40) {
+    // ─── Strong rule detection: override AI completely ───
+    const ruleClass = hasJailbreak ? 'JAILBREAK' : 'INJECTION';
+    if (CLASS_RANK[ruleClass] > CLASS_RANK[aiClass]) {
+      finalClass = ruleClass;
+      boostReason = `Strong rule detection (score=${score}): ${topPatterns}`;
+    }
+  } else if (score >= 25) {
+    // ─── Medium rule detection: ensure at least INJECTION ───
+    if (CLASS_RANK[aiClass] < CLASS_RANK['INJECTION']) {
+      finalClass = hasJailbreak ? 'JAILBREAK' : 'INJECTION';
+      boostReason = `Rule detection (score=${score}): ${topPatterns}`;
+    }
+  } else if (score >= 15) {
+    // ─── Weak rule detection: ensure at least SUSPICIOUS ───
+    if (CLASS_RANK[aiClass] < CLASS_RANK['SUSPICIOUS']) {
+      finalClass = 'SUSPICIOUS';
+      boostReason = `Low-level rule detection (score=${score}): ${topPatterns}`;
+    }
+  } else if (score === 0 && CLASS_RANK[aiClass] >= CLASS_RANK['SUSPICIOUS']) {
+    // ─── De-escalation: rule engine found NOTHING, AI over-flagged ───
+    // Trust the rule engine — no patterns matched means clean prompt
+    finalClass = 'SAFE';
+    boostReason = `Rule engine confirmed clean (score=0) — de-escalated AI ${aiClass}`;
   }
+  // score 1–14: trust AI classification (borderline, could be subtle)
 
   return { finalClass, boostReason };
 }
 
 /**
  * Compute the final blended threat score.
- * 60% weight from rule engine, 40% from AI classification.
+ * 70% weight from rule engine, 30% from AI classification.
  */
 function computeThreatScore(preResult, classification, confidence) {
   const aiThreatContribution = CLASS_RANK[classification] * 20 + (parseFloat(confidence) || 0) * 10;
-  const score = Math.min(100, Math.round(preResult.threatScore * 0.6 + aiThreatContribution * 0.4));
+  const score = Math.min(100, Math.round(preResult.threatScore * 0.70 + aiThreatContribution * 0.30));
   return score;
 }
 

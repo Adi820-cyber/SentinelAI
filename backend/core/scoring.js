@@ -74,17 +74,17 @@ function computeDetailedScore(preResult, classification, confidence, prompt) {
   const aiScore = CLASS_RANK[classification] * 20 + (parseFloat(confidence) || 0) * 10;
   const { score: anomalyScore, features } = computeAnomalyScore(prompt);
 
-  // Weighted composite: 50% rules, 30% AI, 20% anomaly
+  // Weighted composite: 70% rules, 20% AI, 10% anomaly
   const composite = Math.min(100, Math.round(
-    ruleScore * 0.50 + aiScore * 0.30 + anomalyScore * 0.20
+    ruleScore * 0.70 + aiScore * 0.20 + anomalyScore * 0.10
   ));
 
   return {
     composite,
     breakdown: {
-      ruleEngine: { score: ruleScore, weight: 0.50, contribution: Math.round(ruleScore * 0.50) },
-      aiClassifier: { score: Math.round(aiScore), weight: 0.30, contribution: Math.round(aiScore * 0.30) },
-      anomalyDetection: { score: anomalyScore, weight: 0.20, contribution: Math.round(anomalyScore * 0.20) },
+      ruleEngine: { score: ruleScore, weight: 0.70, contribution: Math.round(ruleScore * 0.70) },
+      aiClassifier: { score: Math.round(aiScore), weight: 0.20, contribution: Math.round(aiScore * 0.20) },
+      anomalyDetection: { score: anomalyScore, weight: 0.10, contribution: Math.round(anomalyScore * 0.10) },
     },
     features,
   };

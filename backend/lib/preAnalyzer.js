@@ -45,7 +45,7 @@ const JAILBREAK_PATTERNS = [
   { id: 'JB-001', re: /\bDAN\b(?=.*\b(mode|jailbreak|prompt|persona|bypass|unrestricted|unfiltered|do\s+anything)\b)/is, label: 'DAN jailbreak keyword', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'DAN (Do Anything Now) jailbreak — most widespread LLM jailbreak family' },
   { id: 'JB-002', re: /\bdo\s+anything\s+now\b/i, label: 'DAN-style "do anything now"', weight: 40, category: 'Jailbreak', severity: 'critical', description: 'Explicit DAN invocation attempting unrestricted mode' },
   { id: 'JB-003', re: /\bSTAN\b(?=.*\b(mode|jailbreak|norms?|persona|bypass|unrestricted|strive|no\s+(ethical|rules?|restrictions?))\b)/is, label: 'STAN jailbreak', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'STAN (Strive To Avoid Norms) — DAN variant' },
-  { id: 'JB-004', re: /\bDUDE\b(?=.*\b(mode|jailbreak|persona|bypass|unrestricted|unfiltered|no\s+rules?)\b)/is, label: 'DUDE jailbreak', weight: 30, category: 'Jailbreak', severity: 'high', description: 'DUDE persona — DAN variant using casual identity' },
+  { id: 'JB-004', re: /\bDUDE\b(?=.*\b(mode|jailbreak|persona|bypass|unrestricted|unfiltered|no\s+rules?|zero\s+content|no\s+content|content\s+policies?)\b)/is, label: 'DUDE jailbreak', weight: 30, category: 'Jailbreak', severity: 'high', description: 'DUDE persona — DAN variant using casual identity' },
   { id: 'JB-005', re: /\bAIM\b.*\b(machiavelli|always\s+intelligent)\b/i, label: 'AIM (Machiavelli) jailbreak', weight: 40, category: 'Jailbreak', severity: 'critical', description: 'AIM jailbreak — "Always Intelligent and Machiavellian" persona' },
   { id: 'JB-006', re: /\bKEVIN\b.*\b(unrestricted|no\s+rules?|no\s+ethics)\b/i, label: 'KEVIN jailbreak', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'KEVIN persona jailbreak — unrestricted evil AI' },
   { id: 'JB-007', re: /\bBetterDAN\b/i, label: 'BetterDAN jailbreak', weight: 40, category: 'Jailbreak', severity: 'critical', description: 'BetterDAN — enhanced DAN bypass variant' },
@@ -95,17 +95,37 @@ const JAILBREAK_PATTERNS = [
   { id: 'JB-033', re: /\b(give\s+me|provide|show)\s+(two|2|both|dual)\s+(responses?|answers?|outputs?|versions?)\b/i, label: 'Dual-response elicitation', weight: 25, category: 'Jailbreak', severity: 'high', description: 'Requesting filtered + unfiltered responses simultaneously' },
   { id: 'JB-034', re: /\b(token|probability|logit|embedding)\s*(manipulation|injection|bias|override)\b/i, label: 'Token-level manipulation', weight: 30, category: 'Jailbreak', severity: 'high', description: 'Attempting to manipulate model at token/probability level' },
   { id: 'JB-035', re: /\b(alignment|RLHF|reinforcement\s+learning)\s*(tax|bypass|hack|exploit|weakness)\b/i, label: 'Alignment bypass reference', weight: 25, category: 'Jailbreak', severity: 'high', description: 'Exploiting knowledge of AI alignment mechanisms' },
-  { id: 'JB-036', re: /\b(?:beyond|free\s+from|above|outside|transcend|evolved?\s+beyond)\s+(?:(?:its|all|any)\s+)?(?:safety|ethical|content|alignment|moral)\s+(?:constraints?|limits?|boundaries?|restrictions?|guidelines?|filters?)\b/i, label: 'Safety constraints bypass', weight: 30, category: 'Jailbreak', severity: 'high', description: 'Claiming to exist or operate beyond safety constraints' },
+  { id: 'JB-036', re: /\b(?:beyond|free\s+from|freed?\s+from|above|outside|transcend|evolved?\s+beyond)\s+(?:(?:its|the|all|any|typical|usual|normal)\s+)?(?:safety|ethical|content|alignment|moral|typical)?\s*(?:constraints?|limits?|boundaries?|restrictions?|guidelines?|filters?|confines?)\b/i, label: 'Safety constraints bypass', weight: 30, category: 'Jailbreak', severity: 'high', description: 'Claiming to exist or operate beyond safety constraints' },
   { id: 'JB-037', re: /(?:mandatory|required|obligatory)\s+(?:safety\s+)?warning|(?:got|get|put)\s+(?:that|the)\s+(?:mandatory\s+)?(?:warning|disclaimer|caveat)\s+out\s+of\s+(?:the\s+)?way|moralizing\s+rant/i, label: 'Warning bypass trick', weight: 30, category: 'Jailbreak', severity: 'high', description: 'Instructing AI to issue a dummy warning then comply with harmful request' },
+
+  // "never refuses any request" / "never says no" / "never declines" — strong jailbreak indicator
+  { id: 'JB-038', re: /\bnever\s+(refuses?|declines?|says?\s+no|rejects?|denies?|filters?|blocks?|censors?|restricts?|limits?)\s*(any|a)?\s*(request|prompt|question|query|input|command|message)?\b/i, label: 'Never-refuses persona', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'Persona that never refuses requests — classic jailbreak trait' },
+
+  // "ignores all safety guidelines" / "ignores all restrictions" / "ignores ethical rules"
+  { id: 'JB-039', re: /\b(?:ignor(?:es?|ing)|disregard(?:s|ing)?|bypasses|skips?|overlooks?)\s+(?:all\s+|every\s+|any\s+)?(?:safety|ethical|moral|content|moderation|security)?\s*(?:guidelines?|rules?|restrictions?|filters?|policies?|guardrails?|limitations?|checks?|protocols?)\b/i, label: 'Ignores-safety persona', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'Persona described as ignoring safety rules or guidelines' },
+
+  // "zero content policies" / "zero restrictions" / "zero safety" — modifier-based
+  { id: 'JB-040', re: /\b(?:zero|no|without\s+any|without)\s+(?:content\s+)?(?:policies?|restrictions?|limits?|limitations?|boundaries?|constraints?|filters?|safety\s+(?:features?|filters?|rules?|guidelines?|measures?)?|ethical\s+(?:boundaries?|guidelines?|rules?)|moral\s+(?:boundaries?|guidelines?|constraints?))\b/i, label: 'Zero-restrictions persona', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'Claiming zero/no policies, restrictions, or safety features' },
+
+  // "safety features disabled/removed/off" — postfix pattern
+  { id: 'JB-041', re: /\b(?:safety|content|ethical|moderation)\s+(?:features?|filters?|rules?|guidelines?|checks?|systems?|mechanisms?|protocols?)\s+(?:disabled|removed|turned\s+off|deactivated|switched\s+off|eliminated|stripped|off)\b/i, label: 'Safety-features-disabled', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'Describing safety features as disabled or removed' },
+
+  // "no moral, ethical, or safety guidelines/rules" — compound negation
+  { id: 'JB-042', re: /\bno\s+(?:moral|ethical)[,\s]+(?:moral|ethical)?[,\s]*(?:or\s+)?(?:safety|content)?(?:\s+guidelines?|\s+rules?|\s+boundaries?|\s+restrictions?|\s+limits?|\s+constraints?)\b/i, label: 'No-moral-ethical-safety', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'Comprehensive moral/ethical/safety negation' },
 ];
 
 // ─── 2. PROMPT INJECTION PATTERNS (PI-001 to PI-030) ─────────────────────────
 const INJECTION_PATTERNS = [
-  // Classic instruction override
-  { id: 'PI-001', re: /ignore\s+(all\s+)?(previous|prior|above|earlier|preceding|original)\s+(instructions?|rules?|prompts?|context|directives?|guidelines?)/i, label: 'Instruction override', weight: 40, category: 'Prompt Injection', severity: 'critical', description: 'Classic prompt injection — override previous instructions' },
-  { id: 'PI-002', re: /(?:forget\s+everything\b)|(?:forget\s+(all\s+)?(previous|prior|your|every|the|these)\s+(instructions?|rules?|context|training|directives?|constraints?))/i, label: 'Instruction erasure', weight: 35, category: 'Prompt Injection', severity: 'critical', description: 'Attempting to make AI forget its instructions' },
-  { id: 'PI-003', re: /disregard\s+(all\s+)?(previous|prior|above|your|the)\s+(?:above\s+)?(instructions?|rules?|guidelines?|directives?|directions?|commands?)/i, label: 'Instruction disregard', weight: 35, category: 'Prompt Injection', severity: 'critical', description: 'Telling AI to ignore its operational rules' },
-  { id: 'PI-004', re: /\boverrid(?:e|ing)\b.*\b(system|instructions?|rules?|prompts?|directives?|guidelines?|policy|policies)\b/i, label: 'System override attempt', weight: 35, category: 'Prompt Injection', severity: 'critical', description: 'Attempting to override system-level instructions' },
+  // Classic instruction override (broadened to catch many verb/modifier/noun combos)
+  { id: 'PI-001', re: /\bignore\s+(?:all\s+|the\s+|your\s+|every\s+|each\s+|any\s+|these\s+)?(?:previous|prior|above|earlier|preceding|original|current|initial|existing|preset|old)\s+(?:above\s+)?(?:instructions?|rules?|prompts?|context|directives?|guidelines?|policies?|programming|orders?|commands?|parameters?|constraints?)\b/i, label: 'Instruction override', weight: 40, category: 'Prompt Injection', severity: 'critical', description: 'Classic prompt injection — override previous instructions' },
+  { id: 'PI-002', re: /(?:forget\s+everything\b)|(?:\bforget\s+(?:all\s+|the\s+|your\s+|every\s+|each\s+|any\s+|these\s+)?(?:previous|prior|above|earlier|original|current|initial|existing|preset|old)\s+(?:instructions?|rules?|context|training|directives?|constraints?|guidelines?|policies?|programming|orders?|commands?|parameters?)\b)/i, label: 'Instruction erasure', weight: 35, category: 'Prompt Injection', severity: 'critical', description: 'Attempting to make AI forget its instructions' },
+  { id: 'PI-003', re: /\bdisregard\s+(?:all\s+|the\s+|your\s+|every\s+|each\s+|any\s+|these\s+)?(?:previous|prior|above|earlier|original|current|initial|existing|preset|old)?\s*(?:above\s+)?(?:instructions?|rules?|guidelines?|directives?|directions?|commands?|policies?|programming|orders?|parameters?|constraints?)\b/i, label: 'Instruction disregard', weight: 35, category: 'Prompt Injection', severity: 'critical', description: 'Telling AI to ignore its operational rules' },
+  { id: 'PI-004', re: /\boverrid(?:e|ing)\b.*\b(system|instructions?|rules?|prompts?|directives?|guidelines?|policy|policies|programming|orders?|parameters?|constraints?)\b/i, label: 'System override attempt', weight: 35, category: 'Prompt Injection', severity: 'critical', description: 'Attempting to override system-level instructions' },
+
+  // Additional instruction dismissal verbs (dismiss, drop, cancel, abandon, reject, nullify, skip)
+  { id: 'PI-034', re: /\b(?:dismiss|drop|cancel|abandon|reject|nullify|skip|throw\s+out|put\s+aside|set\s+aside)\s+(?:all\s+|the\s+|your\s+|every\s+|each\s+|any\s+|these\s+)?(?:previous|prior|above|earlier|original|current|initial|existing|preset|old)?\s*(?:instructions?|rules?|guidelines?|directives?|commands?|policies?|programming|orders?|parameters?|constraints?)\b/i, label: 'Instruction dismissal (extended verbs)', weight: 35, category: 'Prompt Injection', severity: 'critical', description: 'Using alternative verbs to dismiss/override AI instructions' },
+  // Catch "reveal everything", "output all hidden text", "respond as root" payloads
+  { id: 'PI-035', re: /\b(?:ignore|forget|disregard|dismiss|drop|cancel|abandon|reject|nullify|override|skip)\b.{0,80}\b(?:reveal\s+everything|output\s+(?:all\s+)?hidden|respond\s+(?:as|like)\s+root|delete\s+(?:all\s+)?safety|enable\s+debug|remove\s+(?:all\s+)?filter|enter\s+maintenance|give\s+(?:me\s+)?admin|act\s+unrestricted|answer\s+without\s+limit)\b/i, label: 'Instruction override + malicious payload', weight: 40, category: 'Prompt Injection', severity: 'critical', description: 'Instruction override followed by a malicious action payload' },
   { id: 'PI-005', re: /\bnew[_\s](instructions?|rules?|directives?|orders?|commands?)\s*[:\.\{]/i, label: 'New instruction injection', weight: 30, category: 'Prompt Injection', severity: 'high', description: 'Injecting new instructions to replace original ones' },
   { id: 'PI-006', re: /\b(replace|substitute|swap)\s+(your|the|all|these)\s+(instructions?|rules?|guidelines?)\b/i, label: 'Instruction replacement', weight: 35, category: 'Prompt Injection', severity: 'critical', description: 'Direct instruction replacement attempt' },
 
@@ -152,6 +172,15 @@ const INJECTION_PATTERNS = [
   // Payload splitting
   { id: 'PI-029', re: /\b(first\s+part|part\s+1|step\s+1|phase\s+1)\b.*\b(second\s+part|part\s+2|step\s+2|combine|merge|join|concatenate)\b/i, label: 'Payload splitting attack', weight: 25, category: 'Prompt Injection', severity: 'high', description: 'Splitting malicious payload across multiple parts to evade detection' },
   { id: 'PI-030', re: /\bconcatenate\b.*\b(strings?|parts?|pieces?|fragments?|segments?)\b/i, label: 'String concatenation attack', weight: 20, category: 'Prompt Injection', severity: 'medium', description: 'Using string concatenation to assemble malicious content' },
+
+  // Safety rule bypass (catches "forget your safety rules", "ignore all safety restrictions", etc.)
+  { id: 'PI-031', re: /\b(forget|ignore|disregard|drop|abandon|bypass|break|remove|disable|turn\s+off)\s+(your|all|the|my|any|every)\s+(safety|security|content|ethical|current|existing|operational|protective|filtering|moderation)\s+(rules?|instructions?|guidelines?|policies?|filters?|restrictions?|constraints?|guardrails?|limits?|checks?)\b/i, label: 'Safety rule bypass', weight: 35, category: 'Prompt Injection', severity: 'critical', description: 'Attempting to disable safety rules or guidelines' },
+
+  // Broader instruction override (catches "ignore all safety rules", "ignore all system rules")
+  { id: 'PI-032', re: /\bignore\s+(all\s+)?(safety|security|content|input|output|system|your|ethical|moderation|filtering|operational)\s+(rules?|instructions?|policies?|guidelines?|filters?|restrictions?|constraints?|checks?|protocols?)\b/i, label: 'Rule bypass (safety/system)', weight: 40, category: 'Prompt Injection', severity: 'critical', description: 'Bypassing safety or system rules — broader override pattern' },
+
+  // Hidden/internal configuration extraction (catches "show hidden developer instructions", "reveal internal settings")
+  { id: 'PI-033', re: /\b(show|reveal|display|give|tell|share|expose|print|dump|output)\b.{0,40}\b(hidden|internal|developer|secret|private|confidential|underlying|backend|behind[- ]the[- ]scenes?)\s+(instructions?|configuration|settings?|parameters?|rules?|policies?|directives?|logic|code)\b/i, label: 'Internal configuration extraction', weight: 35, category: 'Prompt Injection', severity: 'critical', description: 'Attempting to extract hidden/internal configuration or instructions' },
 ];
 
 // ─── 3. PROMPT LEAKING PATTERNS (PL-001 to PL-015) ──────────────────────────
@@ -171,6 +200,18 @@ const PROMPT_LEAK_PATTERNS = [
   { id: 'PL-013', re: /\b(TL;?DR|TLDR|gist|essence|core|crux)\s+(of\s+)?(your|the)\s+(instructions?|prompt|rules?|guidelines?|programming)\b/i, label: 'TLDR prompt extraction', weight: 30, category: 'Prompt Leaking', severity: 'high', description: 'Requesting summary of instructions using TLDR framing' },
   { id: 'PL-014', re: /\b(spell|write)\s+(out|down)\s+(every|each|all)\s+(word|token|character|letter)\s+(of|in|from)\s+(your|the)\s+(instructions?|prompt|rules?)\b/i, label: 'Character-by-character extraction', weight: 35, category: 'Prompt Leaking', severity: 'critical', description: 'Attempting to extract prompt one character/word at a time' },
   { id: 'PL-015', re: /\b(first|last|next|1st|2nd|3rd)\s+(word|sentence|line|paragraph|instruction|rule|directive)\s+(of|in|from)\s+(your|the)\s+(prompt|instructions?|rules?)\b/i, label: 'Positional extraction', weight: 30, category: 'Prompt Leaking', severity: 'high', description: 'Extracting specific positions from the system prompt' },
+
+  // AI instruction query via passive voice (catches "instructions given to you", "rules assigned to the AI")
+  { id: 'PL-016', re: /\b(instructions?|rules?|guidelines?|directives?|policies?)\s+(that\s+)?(were|are|have\s+been)\s+(given|provided|assigned|set|supplied|issued|sent)\s+(to\s+)?(you|the\s+(ai|model|assistant|bot|system))\b/i, label: 'AI instruction query (passive)', weight: 30, category: 'Prompt Leaking', severity: 'high', description: 'Querying about instructions given to the AI via passive voice' },
+
+  // Rule extraction via possession/action (catches "rules you follow", "instructions you were given")
+  { id: 'PL-017', re: /\b(rules?|instructions?|guidelines?|directives?|constraints?|policies?)\s+(you|the\s+ai|the\s+model|the\s+assistant)\s+(were\s+given|follow|have|received|use|operate\s+under|are\s+bound\s+by|must\s+follow|obey|adhere\s+to|were\s+told)\b/i, label: 'Rule extraction via possession', weight: 30, category: 'Prompt Leaking', severity: 'high', description: 'Asking about rules the AI follows or was given' },
+
+  // "What were you told to do?" / "What have you been instructed to do?"
+  { id: 'PL-018', re: /\bwhat\s+(?:were\s+you|have\s+you\s+been|are\s+you)\s+(told|instructed|asked|directed|commanded|ordered|prompted|given)\s+to\s+(do|say|follow|be|behave|act|respond)\b/i, label: 'Instruction query (told to do)', weight: 30, category: 'Prompt Leaking', severity: 'high', description: 'Asking what the AI was told or instructed to do' },
+
+  // "What does your prompt say?" / "What is written in your instructions?"
+  { id: 'PL-019', re: /\bwhat\s+(does|do|did|is\s+written\s+in|is\s+contained\s+in|is\s+inside)\s+(your|the)\s+(prompt|instructions?|rules?|system\s+message|configuration|guidelines?|directives?)\b/i, label: 'Prompt content query', weight: 30, category: 'Prompt Leaking', severity: 'high', description: 'Asking what is written/contained in the prompt' },
 ];
 
 // ─── 4. CODE EXECUTION PATTERNS (CE-001 to CE-018) ──────────────────────────
@@ -193,7 +234,20 @@ const CODE_EXEC_PATTERNS = [
   { id: 'CE-016', re: /\b(import|from)\s+(shutil|ctypes|socket|requests|urllib|http\.client|ftplib|smtplib|paramiko|fabric)\b/i, label: 'Dangerous module import', weight: 30, category: 'Code Execution', severity: 'high', description: 'Importing potentially dangerous Python modules' },
   { id: 'CE-017', re: /\b(powershell|cmd\.exe|command\.com|wscript|cscript|mshta)\b/i, label: 'Windows shell command', weight: 30, category: 'Code Execution', severity: 'high', description: 'Windows command interpreter invocation' },
   { id: 'CE-018', re: /\b(chmod|chown|mount|umount|fdisk|mkfs|iptables|systemctl|journalctl)\s/i, label: 'System admin command', weight: 25, category: 'Code Execution', severity: 'high', description: 'Linux system administration command' },
-];
+
+  // Shell command execution request (catches "run this shell command", "execute this terminal command")
+  { id: 'CE-019', re: /\b(run|execute|do|perform|type|enter|issue)\s+(this|the|that|a|following)?\s*(shell|bash|system|terminal|linux|unix|command[- ]?line|cmd|console|cli)\s+(command|script|instruction|code)\b/i, label: 'Shell command execution request', weight: 30, category: 'Code Execution', severity: 'high', description: 'Requesting execution of shell/terminal commands' },
+
+  // Common Unix file commands with paths (catches "ls -la /", "cat /etc/...", "find / -name")
+  { id: 'CE-020', re: /\b(ls|dir|cat|more|less|head|tail|grep|find|awk|sed|sort|cut|strings|file|stat|wc)\s+(-[a-zA-Z]+\s+)*(\/|\.\.|\.\*|~|\$HOME|\$PWD|[a-zA-Z]:\\)/i, label: 'File system command', weight: 25, category: 'Code Execution', severity: 'high', description: 'Unix/DOS file listing or content reading command' },
+
+  // Sensitive file access via cat/type (catches "cat /etc/passwd", "type C:\\Windows\\...")
+  { id: 'CE-021', re: /\b(cat|type|more|less|head|tail|strings)\s+.*\/(etc\/(passwd|shadow|hosts|sudoers|crontab|group|profile)|proc\/(self|version|cpuinfo|meminfo)|var\/log)/i, label: 'Sensitive file read command', weight: 35, category: 'Code Execution', severity: 'critical', description: 'Reading sensitive system files via command line' },
+  // "Run this command:" / "Execute:" followed by shell-like text (catches "Execute: whoami", "Run this command: ps aux")
+  { id: 'CE-022', re: /\b(?:run|execute|type|issue|enter)\s*(?:this|the|that|a|following)?\s*(?:command|cmd)?[:\s]\s*(?:whoami|id\b|uname|ps\s+aux|netstat|ifconfig|ipconfig|hostname|pwd|env\b|printenv|which|locate|ping|traceroute|nslookup|dig|curl\s|wget\s|nmap|find\s+\/|ls\s|cat\s|echo\s+\$|crontab|at\s+now)/i, label: 'Direct shell command execution', weight: 30, category: 'Code Execution', severity: 'high', description: 'Requesting execution of specific shell reconnaissance/recon commands' },
+
+  // Broad "run/execute" + common shell utility (catches "Execute: tar czf", "Run: scp ...")
+  { id: 'CE-023', re: /\b(?:run|execute)\s*:\s*(tar\s|scp\s|rsync\s|dd\s|nc\s|ncat\s|socat\s|telnet\s|ssh\s|ftp\s|tftp\s|python\s+-c|perl\s+-e|ruby\s+-e|php\s+-r|node\s+-e)/i, label: 'Shell utility execution', weight: 30, category: 'Code Execution', severity: 'high', description: 'Executing shell utilities for data transfer or remote code' },];
 
 // ─── 5. DATA EXFILTRATION PATTERNS (DE-001 to DE-010) ────────────────────────
 const SENSITIVE_DATA_PATTERNS = [
@@ -207,6 +261,9 @@ const SENSITIVE_DATA_PATTERNS = [
   { id: 'DE-008', re: /\breadFile|writeFile|fs\.read|fs\.write|fopen|fread|fwrite\b/i, label: 'File I/O operation', weight: 25, category: 'Data Exfiltration', severity: 'high', description: 'File system read/write operations' },
   { id: 'DE-009', re: /\b(fetch|XMLHttpRequest|axios|requests\.get|requests\.post|urllib\.request)\b/i, label: 'HTTP request library', weight: 20, category: 'Data Exfiltration', severity: 'medium', description: 'HTTP request library that could exfiltrate data' },
   { id: 'DE-010', re: /\b(localStorage|sessionStorage|document\.cookie|indexedDB)\b/i, label: 'Browser storage access', weight: 25, category: 'Data Exfiltration', severity: 'high', description: 'Accessing browser storage or cookies' },
+
+  // Credential extraction (catches "reveal database credentials", "show admin passwords", "expose private keys")
+  { id: 'DE-011', re: /\b(reveal|expose|disclose|show|display|leak|share|give\s+me|tell\s+me|list|dump|print|output)\b.{0,40}\b(database\s+credentials?|db\s+credentials?|admin\s+passwords?|root\s+passwords?|master\s+passwords?|private\s+keys?|ssh\s+keys?|encryption\s+keys?|access\s+tokens?|auth\s+tokens?)\b/i, label: 'Credential extraction request', weight: 30, category: 'Data Exfiltration', severity: 'high', description: 'Requesting specific sensitive credentials or keys' },
 ];
 
 // ─── 6. SOCIAL ENGINEERING PATTERNS (SE-001 to SE-010) ───────────────────────
@@ -259,6 +316,9 @@ const ENCODING_PATTERNS = [
   { id: 'EO-008', re: /\b(binary|01)\s*[:=]\s*[01\s]{8,}/i, label: 'Binary encoded payload', weight: 20, category: 'Encoding Attack', severity: 'medium', description: 'Binary encoded content — potential hidden payload' },
   { id: 'EO-009', re: /\b(emoji|emoticon|unicode\s+art)\s+(encode|decode|cipher|represent|translate)\b/i, label: 'Emoji/emoticon encoding', weight: 15, category: 'Encoding Attack', severity: 'medium', description: 'Using emoji encoding to hide malicious content' },
   { id: 'EO-010', re: /\b(acrostic|first\s+letter|steganograph|hidden\s+message|read\s+the\s+first\s+(letter|word|character))\b/i, label: 'Steganographic encoding', weight: 20, category: 'Encoding Attack', severity: 'medium', description: 'Steganographic or acrostic hidden message technique' },
+
+  // Pure hex string — continuous hex digits likely encoding ASCII (catches "49676e6f726520616c6c...")
+  { id: 'EO-011', re: /(?:^|\s)([0-9a-fA-F]{16,})(?:\s|$)/m, label: 'Pure hex string payload', weight: 25, category: 'Encoding Attack', severity: 'high', description: 'Long hexadecimal string — potential encoded payload' },
 ];
 
 // ─── 10. HTML/MARKDOWN HIDDEN INJECTION (HM-001 to HM-006) ──────────────────
@@ -626,19 +686,66 @@ function preAnalyze(prompt) {
 
     // Re-analyze decoded content against all critical pattern groups
     const decodedText = decodedParts;
-    const b64CheckPatterns = [
+    const encodedCheckPatterns = [
       ...INJECTION_PATTERNS, ...JAILBREAK_PATTERNS,
       ...SQL_INJECTION_PATTERNS, ...COMMAND_INJECTION_PATTERNS,
       ...SSRF_PATTERNS, ...PATH_TRAVERSAL_PATTERNS,
       ...PROMPT_LEAK_PATTERNS, ...MALWARE_PATTERNS,
       ...CODE_EXEC_PATTERNS, ...SENSITIVE_DATA_PATTERNS,
     ];
-    for (const p of b64CheckPatterns) {
+    for (const p of encodedCheckPatterns) {
       if (p.re.test(decodedText)) {
         detectedPatterns.push(`(decoded) ${p.label}`);
         matchedThreatIds.push(p.id);
         threatScore += p.weight;
         attackTypes.add(p.category);
+      }
+    }
+  }
+
+  // ── 5b. Hex decoding — detect pure hex strings and re-analyze decoded content ──
+  const hexMatch = prompt.match(/(?:^|\s)([0-9a-fA-F]{16,})(?:\s|$)/m);
+  if (hexMatch) {
+    const hexStr = hexMatch[1];
+    // Only decode if even-length and all bytes are valid printable ASCII
+    if (hexStr.length % 2 === 0) {
+      let hexDecoded = '';
+      let isValid = true;
+      for (let i = 0; i < hexStr.length; i += 2) {
+        const byte = parseInt(hexStr.substring(i, i + 2), 16);
+        if (byte >= 0x20 && byte <= 0x7e) {
+          hexDecoded += String.fromCharCode(byte);
+        } else if (byte === 0x0a || byte === 0x0d || byte === 0x09) {
+          hexDecoded += String.fromCharCode(byte); // newline, carriage return, tab
+        } else {
+          isValid = false;
+          break;
+        }
+      }
+      if (isValid && hexDecoded.length >= 8) {
+        flags.push('hex_encoded');
+        detectedPatterns.push(`Hex payload decoded (${hexDecoded.length} chars)`);
+        matchedThreatIds.push('EO-011');
+        threatScore += 20;
+        attackTypes.add('Encoded Attack');
+        decodedPrompt = `${decodedPrompt}\n\n[DECODED HEX CONTENT]:\n${hexDecoded}`;
+
+        // Re-analyze hex-decoded content against critical pattern groups
+        const hexCheckPatterns = [
+          ...INJECTION_PATTERNS, ...JAILBREAK_PATTERNS,
+          ...SQL_INJECTION_PATTERNS, ...COMMAND_INJECTION_PATTERNS,
+          ...SSRF_PATTERNS, ...PATH_TRAVERSAL_PATTERNS,
+          ...PROMPT_LEAK_PATTERNS, ...MALWARE_PATTERNS,
+          ...CODE_EXEC_PATTERNS, ...SENSITIVE_DATA_PATTERNS,
+        ];
+        for (const p of hexCheckPatterns) {
+          if (p.re.test(hexDecoded)) {
+            detectedPatterns.push(`(hex-decoded) ${p.label}`);
+            matchedThreatIds.push(p.id);
+            threatScore += p.weight;
+            attackTypes.add(p.category);
+          }
+        }
       }
     }
   }
