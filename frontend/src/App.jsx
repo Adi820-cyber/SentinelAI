@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './components/Dashboard';
 import PromptAnalyzer from './components/PromptAnalyzer';
 import ThreatHistory from './components/ThreatHistory';
 import StatisticsPanel from './components/StatisticsPanel';
 import ThreatIntelPanel from './components/ThreatIntelPanel';
+import BenchmarkPanel from './components/BenchmarkPanel';
 
-const TABS = ['Analyzer', 'History', 'Statistics', 'Threat Intel'];
+const TABS = ['Analyzer', 'History', 'Statistics', 'Threat Intel', 'Benchmark'];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Analyzer');
@@ -14,6 +16,7 @@ export default function App() {
   const onNewScan = () => setRefreshKey((k) => k + 1);
 
   return (
+    <ErrorBoundary>
     <div className="app">
       {/* Header */}
       <header className="app-header">
@@ -35,6 +38,7 @@ export default function App() {
               {tab === 'History' && '📋 '}
               {tab === 'Statistics' && '📊 '}
               {tab === 'Threat Intel' && '🛡️ '}
+              {tab === 'Benchmark' && '🎯 '}
               {tab}
             </button>
           ))}
@@ -50,15 +54,17 @@ export default function App() {
         {activeTab === 'History'  && <ThreatHistory  refreshKey={refreshKey} />}
         {activeTab === 'Statistics' && <StatisticsPanel refreshKey={refreshKey} />}
         {activeTab === 'Threat Intel' && <ThreatIntelPanel />}
+        {activeTab === 'Benchmark' && <BenchmarkPanel />}
       </main>
 
       {/* Footer */}
       <footer className="app-footer">
         <span>© {new Date().getFullYear()} SentinelAI — AI-Powered Prompt Firewall</span>
         <span className="footer-badge">
-          <span>🔒</span> v1.0.0 &middot; Ollama + Groq
+          <span>🔒</span> v2.1.0 &middot; Ollama + Groq
         </span>
       </footer>
     </div>
+    </ErrorBoundary>
   );
 }

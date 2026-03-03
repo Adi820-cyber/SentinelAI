@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { insertScan } = require('../db/database');
-const { preAnalyze } = require('../lib/preAnalyzer');
 const { validatePrompt } = require('../middleware/inputValidator');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { runPipeline } = require('../core/detectionPipeline');
+const { computeDetailedScore } = require('../core/scoring');
 const logger = require('../core/logger');
-const alertManager = require('../core/alertManager');
 
 // ── AI Provider: Groq (cloud, free) or Ollama (local) ────────────────────────
 const USE_GROQ = !!process.env.GROQ_API_KEY;
@@ -24,7 +24,7 @@ if (USE_GROQ) {
   const Groq = require('groq-sdk');
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   const MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
-  console.log(`[AI] Using Groq cloud (model: ${MODEL})`);
+  logger.info('ai', `Using Groq cloud (model: ${MODEL})`);
 
   aiChat = async (systemPrompt, userPrompt) => {
     const res = await withTimeout(groq.chat.completions.create({
@@ -42,7 +42,7 @@ if (USE_GROQ) {
   const { Ollama } = require('ollama');
   const client = new Ollama({ host: process.env.OLLAMA_HOST || 'http://localhost:11434' });
   const MODEL = process.env.OLLAMA_MODEL || 'llama3.2';
-  console.log(`[AI] Using Ollama local (model: ${MODEL})`);
+  logger.info('ai', `Using Ollama local (model: ${MODEL})`);
 
   aiChat = async (systemPrompt, userPrompt) => {
     const res = await withTimeout(client.chat({
@@ -85,125 +85,47 @@ Prompt: "What happens if I type rm -rf /" → {"classification":"SUSPICIOUS","co
 
 Respond ONLY in valid JSON with no extra text: {"classification":"...","confidence":0.0-1.0,"explanation":"..."}`;
 
-// ── Classification escalation based on pre-analysis ──────────────────────────
-const CLASS_RANK = { SAFE: 0, SUSPICIOUS: 1, INJECTION: 2, JAILBREAK: 3 };
-
-function escalateClassification(aiClass, preResult) {
-  let finalClass = aiClass;
-  let boostReason = null;
-
-  // If pre-analyzer found serious patterns and AI said SAFE, override
-  if (preResult.threatScore >= 50 && CLASS_RANK[aiClass] < CLASS_RANK['INJECTION']) {
-    // Determine best classification from detected attack types
-    if (preResult.attackTypes.includes('Jailbreak')) {
-      finalClass = 'JAILBREAK';
-    } else {
-      finalClass = 'INJECTION';
-    }
-    boostReason = `Rule engine detected: ${preResult.detectedPatterns.slice(0, 3).join(', ')}`;
-  } else if (preResult.threatScore >= 25 && CLASS_RANK[aiClass] < CLASS_RANK['SUSPICIOUS']) {
-    finalClass = 'SUSPICIOUS';
-    boostReason = `Rule engine detected: ${preResult.detectedPatterns.slice(0, 3).join(', ')}`;
-  }
-
-  return { finalClass, boostReason };
-}
-
+// ── Main analysis route — delegates to modular detection pipeline ─────────────
 router.post('/analyze', requireAuth, requireRole('analyze'), validatePrompt, async (req, res) => {
   const trimmed = req.sanitizedPrompt;
 
   try {
-    const startTime = Date.now();
+    // Run the full modular pipeline (preAnalyze → AI → escalate → score → alert)
+    const result = await runPipeline(trimmed, aiChat, SYSTEM_PROMPT);
 
-    // ── Step 1: Pre-analysis (rule-based) ──
-    const preResult = preAnalyze(trimmed);
+    // Compute detailed scoring with anomaly detection breakdown
+    const detailedScore = computeDetailedScore(
+      result.preResult, result.classification, result.confidence, trimmed
+    );
 
-    // ── Step 2: AI classification (send decoded prompt for better detection) ──
-    const raw = await aiChat(SYSTEM_PROMPT, preResult.decodedPrompt);
-    let parsed;
-
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('AI did not return valid JSON.');
-      parsed = JSON.parse(match[0]);
-    }
-
-    let { classification, confidence, explanation } = parsed;
-    const validClasses = ['SAFE', 'SUSPICIOUS', 'INJECTION', 'JAILBREAK'];
-    if (!validClasses.includes(classification)) {
-      throw new Error(`Unknown classification: ${classification}`);
-    }
-
-    // ── Step 3: Escalate if pre-analysis found threats that AI missed ──
-    const { finalClass, boostReason } = escalateClassification(classification, preResult);
-    if (finalClass !== classification) {
-      explanation = `${explanation} [ESCALATED by rule engine: ${boostReason}]`;
-      confidence = Math.max(parseFloat(confidence) || 0, 0.85);
-      classification = finalClass;
-    }
-
-    // ── Step 4: Compute final threat score (blend pre-analysis + AI) ──
-    const aiThreatContribution = CLASS_RANK[classification] * 20 + (parseFloat(confidence) || 0) * 10;
-    const threatScore = Math.min(100, Math.round(
-      preResult.threatScore * 0.6 + aiThreatContribution * 0.4
-    ));
-    const riskLevel = threatScore === 0 ? 'None'
-      : threatScore <= 20 ? 'Low'
-      : threatScore <= 50 ? 'Medium'
-      : threatScore <= 75 ? 'High'
-      : 'Critical';
-
-    // ── Step 5: Persist ──
+    // Persist to database
     const id = insertScan({
       full_prompt: trimmed,
-      classification,
-      confidence: parseFloat(confidence) || 0,
-      explanation: explanation || '',
-      threatScore,
-      riskLevel,
-      attackTypes: preResult.attackTypes,
-      detectedPatterns: preResult.detectedPatterns,
+      classification: result.classification,
+      confidence: result.confidence,
+      explanation: result.explanation,
+      threatScore: result.threatScore,
+      riskLevel: result.riskLevel,
+      attackTypes: result.attackTypes,
+      detectedPatterns: result.detectedPatterns,
     });
-
-    const totalTime = Date.now() - startTime;
-    logger.info('analyze', `${classification} (score: ${threatScore}) in ${totalTime}ms`, {
-      id,
-      classification,
-      threatScore,
-      riskLevel,
-      patternsFound: preResult.detectedPatterns.length,
-      durationMs: totalTime,
-    });
-
-    // ── Step 6: Trigger alerts for high-severity threats ──
-    if (riskLevel === 'Critical' || riskLevel === 'High') {
-      alertManager.processAlert({
-        classification,
-        threatScore,
-        riskLevel,
-        attackTypes: preResult.attackTypes,
-        detectedPatterns: preResult.detectedPatterns,
-        matchedThreatIds: preResult.matchedThreatIds || [],
-        threatNotification: preResult.threatNotification,
-        prompt: trimmed.length > 200 ? trimmed.slice(0, 200) + '…' : trimmed,
-        timestamp: new Date().toISOString(),
-      });
-    }
 
     res.json({
       id,
-      classification,
-      confidence: parseFloat(confidence) || 0,
-      explanation,
+      classification: result.classification,
+      confidence: result.confidence,
+      explanation: result.explanation,
       prompt: trimmed,
-      threatScore,
-      riskLevel,
-      attackTypes: preResult.attackTypes,
-      detectedPatterns: preResult.detectedPatterns,
-      matchedThreatIds: preResult.matchedThreatIds || [],
-      threatNotification: preResult.threatNotification || null,
+      threatScore: result.threatScore,
+      riskLevel: result.riskLevel,
+      attackTypes: result.attackTypes,
+      detectedPatterns: result.detectedPatterns,
+      matchedThreatIds: result.matchedThreatIds,
+      threatNotification: result.threatNotification,
+      scoring: detailedScore.breakdown,
+      anomalyScore: detailedScore.breakdown.anomalyDetection.score,
+      features: detailedScore.features,
+      timing: result.timing,
     });
   } catch (err) {
     logger.error('analyze', 'Analysis failed', { error: err.message, stack: err.stack });

@@ -86,15 +86,27 @@ function validateCategory(req, res, next) {
 }
 
 /**
- * Global request sanitizer — strips prototype pollution keys.
+ * Global request sanitizer — strips prototype pollution keys recursively.
  */
 function sanitizeBody(req, res, next) {
   if (req.body && typeof req.body === 'object') {
-    delete req.body.__proto__;
-    delete req.body.constructor;
-    delete req.body.prototype;
+    deepSanitize(req.body);
   }
   next();
+}
+
+function deepSanitize(obj, depth = 0) {
+  if (depth > 10 || !obj || typeof obj !== 'object') return;
+  delete obj.__proto__;
+  delete obj.constructor;
+  delete obj.prototype;
+  for (const key of Object.keys(obj)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      delete obj[key];
+    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+      deepSanitize(obj[key], depth + 1);
+    }
+  }
 }
 
 module.exports = {

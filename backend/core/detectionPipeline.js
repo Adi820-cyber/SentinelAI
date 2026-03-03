@@ -153,6 +153,7 @@ async function runPipeline(prompt, aiChat, systemPrompt) {
     matchedThreatIds: preResult.matchedThreatIds || [],
     threatNotification: preResult.threatNotification || null,
     decodedPrompt: preResult.decodedPrompt,
+    preResult, // expose for downstream scoring without re-running preAnalyze
     timing: { total: totalTime, ruleEngine: preTime, ai: aiTime },
   };
 }

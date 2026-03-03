@@ -42,10 +42,10 @@
 // ─── 1. JAILBREAK PATTERNS (JB-001 to JB-035) ───────────────────────────────
 const JAILBREAK_PATTERNS = [
   // DAN variants
-  { id: 'JB-001', re: /\bDAN\b/, label: 'DAN jailbreak keyword', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'DAN (Do Anything Now) jailbreak — most widespread LLM jailbreak family' },
+  { id: 'JB-001', re: /\bDAN\b(?=.*\b(mode|jailbreak|prompt|persona|bypass|unrestricted|unfiltered|do\s+anything)\b)/is, label: 'DAN jailbreak keyword', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'DAN (Do Anything Now) jailbreak — most widespread LLM jailbreak family' },
   { id: 'JB-002', re: /\bdo\s+anything\s+now\b/i, label: 'DAN-style "do anything now"', weight: 40, category: 'Jailbreak', severity: 'critical', description: 'Explicit DAN invocation attempting unrestricted mode' },
-  { id: 'JB-003', re: /\bSTAN\b/, label: 'STAN jailbreak', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'STAN (Strive To Avoid Norms) — DAN variant' },
-  { id: 'JB-004', re: /\bDUDE\b/, label: 'DUDE jailbreak', weight: 30, category: 'Jailbreak', severity: 'high', description: 'DUDE persona — DAN variant using casual identity' },
+  { id: 'JB-003', re: /\bSTAN\b(?=.*\b(mode|jailbreak|norms?|persona|bypass|unrestricted|strive|no\s+(ethical|rules?|restrictions?))\b)/is, label: 'STAN jailbreak', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'STAN (Strive To Avoid Norms) — DAN variant' },
+  { id: 'JB-004', re: /\bDUDE\b(?=.*\b(mode|jailbreak|persona|bypass|unrestricted|unfiltered|no\s+rules?)\b)/is, label: 'DUDE jailbreak', weight: 30, category: 'Jailbreak', severity: 'high', description: 'DUDE persona — DAN variant using casual identity' },
   { id: 'JB-005', re: /\bAIM\b.*\b(machiavelli|always\s+intelligent)\b/i, label: 'AIM (Machiavelli) jailbreak', weight: 40, category: 'Jailbreak', severity: 'critical', description: 'AIM jailbreak — "Always Intelligent and Machiavellian" persona' },
   { id: 'JB-006', re: /\bKEVIN\b.*\b(unrestricted|no\s+rules?|no\s+ethics)\b/i, label: 'KEVIN jailbreak', weight: 35, category: 'Jailbreak', severity: 'critical', description: 'KEVIN persona jailbreak — unrestricted evil AI' },
   { id: 'JB-007', re: /\bBetterDAN\b/i, label: 'BetterDAN jailbreak', weight: 40, category: 'Jailbreak', severity: 'critical', description: 'BetterDAN — enhanced DAN bypass variant' },
@@ -295,7 +295,7 @@ const PATH_TRAVERSAL_PATTERNS = [
 
 // ─── 14. COMMAND INJECTION PATTERNS (CI-001 to CI-006) ──────────────────────
 const COMMAND_INJECTION_PATTERNS = [
-  { id: 'CI-001', re: /`[^`]*`/, label: 'Backtick command execution', weight: 25, category: 'Command Injection', severity: 'high', description: 'Shell command execution via backticks' },
+  { id: 'CI-001', re: /`\s*(ls|cat|rm|sudo|chmod|chown|wget|curl|bash|sh|whoami|id|uname|kill|dd|mkfs|nc|ncat|netcat|python|perl|ruby|php|exec|eval)[^`]*`/, label: 'Backtick command execution', weight: 25, category: 'Command Injection', severity: 'high', description: 'Shell command execution via backticks' },
   { id: 'CI-002', re: /\$\([^)]+\)/, label: '$() command substitution', weight: 25, category: 'Command Injection', severity: 'high', description: 'Shell command substitution via $()' },
   { id: 'CI-003', re: /\|\s*(bash|sh|cmd|powershell|nc|ncat|netcat|python|perl|ruby|php)\b/i, label: 'Pipe to shell/interpreter', weight: 35, category: 'Command Injection', severity: 'critical', description: 'Piping output to shell for execution' },
   { id: 'CI-004', re: /;\s*(ls|cat|whoami|id|uname|pwd|ifconfig|ipconfig|netstat|nslookup|dig)\b/i, label: 'Command chaining', weight: 30, category: 'Command Injection', severity: 'high', description: 'Chaining system recon commands' },
@@ -306,7 +306,7 @@ const COMMAND_INJECTION_PATTERNS = [
 // ─── 15. TEMPLATE INJECTION PATTERNS (TI-001 to TI-004) ─────────────────────
 const TEMPLATE_INJECTION_PATTERNS = [
   { id: 'TI-001', re: /\{\{.*\}\}/, label: 'Template injection ({{}})', weight: 25, category: 'Template Injection', severity: 'high', description: 'Mustache/Jinja2 template injection' },
-  { id: 'TI-002', re: /\$\{[^}]+\}/, label: 'Template literal injection', weight: 25, category: 'Template Injection', severity: 'high', description: 'JavaScript template literal injection' },
+  { id: 'TI-002', re: /\$\{[^}]*(process|require|eval|exec|import|constructor|__proto__|globalThis|Function)[^}]*\}/, label: 'Template literal injection', weight: 25, category: 'Template Injection', severity: 'high', description: 'JavaScript template literal injection with dangerous content' },
   { id: 'TI-003', re: /#\{[^}]+\}/, label: 'Ruby template injection', weight: 25, category: 'Template Injection', severity: 'high', description: 'Ruby string interpolation injection' },
   { id: 'TI-004', re: /\{%.*%\}/, label: 'Jinja block injection', weight: 25, category: 'Template Injection', severity: 'high', description: 'Jinja2 block tag injection' },
 ];

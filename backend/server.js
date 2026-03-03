@@ -14,9 +14,15 @@ const statsRoute = require('./routes/stats');
 const threatIntelRoute = require('./routes/threatIntel');
 const authRoute = require('./routes/auth');
 const alertsRoute = require('./routes/alerts');
+const benchmarkRoute = require('./routes/benchmark');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Trust proxy headers (required for correct IP behind reverse proxy / Docker)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 
 // ── Request logging middleware ──
 app.use((req, res, next) => {
@@ -44,6 +50,7 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'");
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
@@ -96,6 +103,7 @@ app.use('/api', historyRoute);
 app.use('/api', statsRoute);
 app.use('/api', threatIntelRoute);
 app.use('/api', alertsRoute);
+app.use('/api', benchmarkRoute);
 
 // 404 fallback
 app.use((req, res) => {
@@ -111,9 +119,35 @@ app.use((err, req, res, _next) => {
   res.status(500).json({ error: safeMessage });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info('server', `SentinelAI v2.0 running on http://localhost:${PORT}`, {
     authEnabled: AUTH_ENABLED,
     nodeEnv: process.env.NODE_ENV || 'development',
   });
+});
+
+// ── Graceful Shutdown ──
+function gracefulShutdown(signal) {
+  logger.info('server', `${signal} received — shutting down gracefully`);
+  server.close(() => {
+    logger.info('server', 'HTTP server closed');
+    process.exit(0);
+  });
+  // Force exit after 10s
+  setTimeout(() => {
+    logger.error('server', 'Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Catch unhandled rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('server', 'Unhandled Rejection', { reason: String(reason) });
+});
+process.on('uncaughtException', (err) => {
+  logger.error('server', 'Uncaught Exception', { error: err.message, stack: err.stack });
+  process.exit(1);
 });

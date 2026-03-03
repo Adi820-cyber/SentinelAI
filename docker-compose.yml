@@ -1,0 +1,75 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  SentinelAI — Docker Compose
+#  Development and production orchestration.
+# ══════════════════════════════════════════════════════════════════════════════
+version: '3.8'
+
+services:
+  # ── SentinelAI Application ─────────────────────────────────────────────────
+  sentinelai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sentinelai
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      - AUTH_ENABLED=${AUTH_ENABLED:-false}
+      - AUTH_ADMIN_USER=${AUTH_ADMIN_USER:-admin}
+      - AUTH_ADMIN_PASS=${AUTH_ADMIN_PASS:-}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-}
+      - ALERT_SIEM_ENABLED=${ALERT_SIEM_ENABLED:-false}
+    volumes:
+      - sentinelai-data:/app/backend/db
+      - sentinelai-logs:/app/backend/logs
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - sentinel-net
+
+  # ── Ollama (Local AI) ─────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sentinelai-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - sentinel-net
+    deploy:
+      resources:
+        reservations:
+          memory: 2G
+
+volumes:
+  sentinelai-data:
+    driver: local
+  sentinelai-logs:
+    driver: local
+  ollama-data:
+    driver: local
+
+networks:
+  sentinel-net:
+    driver: bridge

@@ -7,8 +7,30 @@ const API_BASE = rawUrl
   ? `${rawUrl.replace(/\/+$/, '')}/api`
   : '/api';
 
+// ── Auth token management ───────────────────────────────────────────────────
+const AUTH_KEY = 'sentinelai_api_key';
+
+export function getApiKey() {
+  return localStorage.getItem(AUTH_KEY) || '';
+}
+
+export function setApiKey(key) {
+  if (key) {
+    localStorage.setItem(AUTH_KEY, key);
+  } else {
+    localStorage.removeItem(AUTH_KEY);
+  }
+}
+
+function authHeaders() {
+  const key = getApiKey();
+  return key ? { 'x-api-key': key } : {};
+}
+
 export async function apiGet(path) {
-  const res = await fetch(`${API_BASE}${path}`);
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { ...authHeaders() },
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || `Request failed: ${res.status}`);
@@ -19,7 +41,7 @@ export async function apiGet(path) {
 export async function apiPost(path, body) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   });
   const data = await res.json();
